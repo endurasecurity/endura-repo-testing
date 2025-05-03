@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.14.1.6709ea8
+Version: 0.14.1.9114218
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
 Installed-Size: 12064
-Filename: ./endura-sensor_0.14.1.6709ea8_amd64.deb
-Size: 3168604
-MD5sum: e17b6b44a8d9339527903dbad387278b
-SHA1: 5e289e48306f38444431a547e867991876cf6431
-SHA256: e996adae2ccdab23a397f7dda1239c7811b67cc18cd4096d3e4cbf5ef8f177b4
+Filename: ./endura-sensor_0.14.1.9114218_amd64.deb
+Size: 3169804
+MD5sum: cf94366684e151010f45fad56dd96b9c
+SHA1: fec26cf333d572f6bf3bf630291dfb7010fa3f59
+SHA256: 420eb385ac4419c53df4c4da584c18d5ba156f7ed53476397fa68319947f2197
 Section: Development
 Priority: optional
 Description: sensor
@@ -30,6 +30,21 @@ Description: sensor
  .
  ## ISSUES
  .
+ ### ISSUE: name resolution is insufficient
+ .
+ - resolves to one ip on load but another when customer app runs
+ - consider blocking dns resolution in the kernel itself
+ .
+ ### ISSUE: event should dictate "created_at", not team-server
+ .
+ - team-server gets events out of order and will capture invalid timestamps
+ - should be able to sort by timestamp and see events as they were triggered
+ during the build
+ .
+ ### ISSUE: allow expression of ip address range in net connect/bind policies
+ .
+ - ex: 140.82.[111-114].[33-34]
+ .
  ### ISSUE: only "/usr/bin/endura" is authorized to access the socket
  .
  ### ISSUE: who is authorized to invoke "/usr/bin/endura"?
@@ -51,18 +66,142 @@ Description: sensor
  - UPDATE: enforce 3 level path_exec, add "ENDURA_SENSOR_KEY" and validate
  before processing "endura" command
  .
- ### ISSUE: likely need an "overwrite" policy
- .
- - assume github actions and the demo app
- -> runner is based on node (is this actually true?)
- -> npm install run by node
- -> node can write to anything in workspace
- - where is the "git clone" equivalent in the server logs?
- -> ANS: events were lost due to starting job before server ready
- .
  ### QUESTION: musl threading performance issues
  .
  - see:
  https://www.linkedin.com/pulse/testing-alternative-c-memory-allocators-pt-2-musl-mystery-gomes/
  - adopt mimalloc? already implemented. no metrics to assess impact!!
+ .
+ ### ISSUE: Rocky and Alm 8 Fails
+ .
+ [info] [test] sensor-test src/network_connect
+ make[1]: Entering directory
+ '/home/developer/workspace/vendor/sensor-test/src/network_connect'
+ sudo -E bats -T main.bats
+ 1..6
+ [info] creating environment: /tmp/endura_network_connect
+ [info] installing endura sensor
+ [info] endura 0.14.1.0e298fc installed
+ [info] starting sensor
+ [info] lsm bpf enabled: capability,yama,selinux,bpf
+ [info] endura 0.14.1.0e298fc installed
+ [info] waiting for sensor to start (1/15)
+ [info] starting job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3a-5bport-5d
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3a-5bport-5d
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] starting job: test_network_connect_all-3a-5bhost-5d-3a-5bport-5d
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_all-3a-5bhost-5d-3a-5bport-5d
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] starting job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3aall
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3aall
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] starting job: test_network_connect_-5bpath-5d-3aall-3a-5bport-5d
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_-5bpath-5d-3aall-3a-5bport-5d
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] starting job: test_network_connect_-5bpath-5d-3aall-3aall
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_-5bpath-5d-3aall-3aall
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] starting job: test_network_connect_all_all-3aall
+ [info] testing policy permit: 683fdae
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping job: test_network_connect_all_all-3aall
+ [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
+ http://example.com
+ [info] stopping sensor
+ [info] deleting environment
+ # bats warning: Executed 0 instead of expected 6 tests
+ make[1]: Leaving directory
+ '/home/developer/workspace/vendor/sensor-test/src/network_connect'
+ make: Leaving directory '/home/developer/workspace/vendor/sensor-test'
+ make[1]: *** [Makefile:11: test] Error 1
+ make: *** [Makefile:52: test] Error 2
+ make: *** [Makefile:151: test-alma-8-amd64] Error 2
+ .
+ - logging in via console and dmesg shows:
+ .
+ "virtio_net virtio1 eth0: XDP request 5 queues but max is 1"
+ changing to "32" made no difference
+ .
+ - all network connections seem to freeze / hang once xdp_dns_monitor is loaded
+ .
+ - per chatgpt
+ .
+ Native XDP on virtio-net (supported since kernel 4.10) asks the driver to
+ disable large-receive offload (LRO) and related “guest” offloads, and to
+ hand you direct RX/TX queues.
+ .
+ On RHEL 8’s 4.18 virtio_net driver, however, the tap/virtio stack still has
+ LRO enabled by default (via the IFF_VNET_HDR flag), and it will happily let you
+ attach the XDP program but then never hand packets back up to the kernel
+ network stack. Everything just sits in the queues and your TCP handshakes hang.
+ .
+ .
+ .
+ ### ISSUE: Oracle 8 Fails
+ .
+ [info] [test] sensor-test src/hook_ebpf
+ make[1]: Entering directory
+ '/home/developer/workspace/vendor/sensor-test/src/hook_ebpf'
+ sudo -E bats -T main.bats
+ 1..2
+ [info] creating environment: /tmp/endura_hook_ebpf
+ [info] installing endura sensor
+ [info] endura 0.14.1.0e298fc installed
+ [info] starting sensor
+ [warn] lsm bpf not enabled: lockdown,capability,yama,selinux
+ [info] endura 0.14.1.0e298fc installed
+ [info] waiting for sensor to start (1/15)
+ [info] starting job: test_hook_ebpf_-5bpath-5d
+ [error] expected error: /bin/bash /tmp/endura_hook_ebpf/script.sh
+ [info] stopping job: test_hook_ebpf_-5bpath-5d
+ .
+ # 2025-05-02T00:18:33.626905Z  WARN     hook_ebpf
+ endura::bpf::security_bpf_prog: HookEbpfEvent { processes: [{ id: 47212, pid:
+ 47212, uid: 0, gid: 0, path: /tmp/endura_hook_ebpf/bpftrace, cwd:
+ /tmp/endura_hook_ebpf }, { id: 47210, pid: 47210, uid: 0, gid: 0, path:
+ /usr/bin/bash, cwd: /tmp/endura_hook_ebpf }, { id: 47062, pid: 47062, uid:
+ 1000, gid: 0, path: /usr/bin/sudo, cwd:
+ /home/developer/workspace/vendor/sensor-test/src/hook_ebpf }, { id: 47061, pid:
+ 47061, uid: 1000, gid: 1000, path: /usr/bin/make, cwd:
+ /home/developer/workspace/vendor/sensor-test/src/hook_ebpf }], program:
+ do_nanosleep, outcome: Terminated, mode: Enforce, job: 875397, build: 0 }
+ # Attaching 1 probe...
+ #
+ #
+ [info] starting job: test_hook_ebpf_all
+ [error] expected error: /bin/bash /tmp/endura_hook_ebpf/script.sh
+ [info] stopping job: test_hook_ebpf_all
+ not ok 2 hook ebpf all in 8709ms
+ # (from function `log_error' in file ../env.bats, line 49,
+ #  from function `verify_ebpf_rejected' in file main.bats, line 24,
+ #  from function `setup' in test file main.bats, line 48)
+ #   `verify_ebpf_rejected' failed
+ # Attaching 1 probe...
+ #
+ .
+ - does not appear that "bpf_send_signal(KILL)" is working? when sleeping for
+ 3333 it just sat instead of dying
+ - note we are not checking the return code of bpf_send_signal: might be failing
+ on oracle 8
 
