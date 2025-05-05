@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.14.1.9114218
+Version: 0.14.3.837b903
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
 Installed-Size: 12064
-Filename: ./endura-sensor_0.14.1.9114218_amd64.deb
-Size: 3169804
-MD5sum: cf94366684e151010f45fad56dd96b9c
-SHA1: fec26cf333d572f6bf3bf630291dfb7010fa3f59
-SHA256: 420eb385ac4419c53df4c4da584c18d5ba156f7ed53476397fa68319947f2197
+Filename: ./endura-sensor_0.14.3.837b903_amd64.deb
+Size: 3167240
+MD5sum: ddb532717aed317256d52d8504b5760b
+SHA1: afefa1b0debcc1a319f40cc3ddad0c9b1a16cb58
+SHA256: 19144a3ed0c1dac52ff8fb13a45ab3a22ed77de907e300c43ef7748d27000844
 Section: Development
 Priority: optional
 Description: sensor
@@ -29,6 +29,10 @@ Description: sensor
  - Inventory of libraries being used
  .
  ## ISSUES
+ .
+ ### ISSUE: io_uring is async where syscalls not invoked
+ .
+ - need tests to verify that kprobes/LSMs stil invoked correctly
  .
  ### ISSUE: name resolution is insufficient
  .
@@ -156,7 +160,10 @@ Description: sensor
  attach the XDP program but then never hand packets back up to the kernel
  network stack. Everything just sits in the queues and your TCP handshakes hang.
  .
+ - consider moving away from XDP and to kprobe or similar
  .
+ SEC("kprobe/udp_recvmsg")
+ SEC("tracepoint/net/netif_receive_skb")
  .
  ### ISSUE: Oracle 8 Fails
  .
@@ -204,4 +211,5 @@ Description: sensor
  3333 it just sat instead of dying
  - note we are not checking the return code of bpf_send_signal: might be failing
  on oracle 8
+ -> update: verified return code - no issue there
 
