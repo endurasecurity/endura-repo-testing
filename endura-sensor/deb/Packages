@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.14.3.837b903
+Version: 0.16.0.84dacb6
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 12064
-Filename: ./endura-sensor_0.14.3.837b903_amd64.deb
-Size: 3167240
-MD5sum: ddb532717aed317256d52d8504b5760b
-SHA1: afefa1b0debcc1a319f40cc3ddad0c9b1a16cb58
-SHA256: 19144a3ed0c1dac52ff8fb13a45ab3a22ed77de907e300c43ef7748d27000844
+Installed-Size: 12084
+Filename: ./endura-sensor_0.16.0.84dacb6_amd64.deb
+Size: 3168764
+MD5sum: 04808f21d123df72702aeb1921c0a9b0
+SHA1: 1634190cf6925be92bb96a5316cf25032331a166
+SHA256: 4168866af10932fe67e9a1f10a5ab3656dac3f762c91096e537c4029c8255f6f
 Section: Development
 Priority: optional
 Description: sensor
@@ -164,52 +164,4 @@ Description: sensor
  .
  SEC("kprobe/udp_recvmsg")
  SEC("tracepoint/net/netif_receive_skb")
- .
- ### ISSUE: Oracle 8 Fails
- .
- [info] [test] sensor-test src/hook_ebpf
- make[1]: Entering directory
- '/home/developer/workspace/vendor/sensor-test/src/hook_ebpf'
- sudo -E bats -T main.bats
- 1..2
- [info] creating environment: /tmp/endura_hook_ebpf
- [info] installing endura sensor
- [info] endura 0.14.1.0e298fc installed
- [info] starting sensor
- [warn] lsm bpf not enabled: lockdown,capability,yama,selinux
- [info] endura 0.14.1.0e298fc installed
- [info] waiting for sensor to start (1/15)
- [info] starting job: test_hook_ebpf_-5bpath-5d
- [error] expected error: /bin/bash /tmp/endura_hook_ebpf/script.sh
- [info] stopping job: test_hook_ebpf_-5bpath-5d
- .
- # 2025-05-02T00:18:33.626905Z  WARN     hook_ebpf
- endura::bpf::security_bpf_prog: HookEbpfEvent { processes: [{ id: 47212, pid:
- 47212, uid: 0, gid: 0, path: /tmp/endura_hook_ebpf/bpftrace, cwd:
- /tmp/endura_hook_ebpf }, { id: 47210, pid: 47210, uid: 0, gid: 0, path:
- /usr/bin/bash, cwd: /tmp/endura_hook_ebpf }, { id: 47062, pid: 47062, uid:
- 1000, gid: 0, path: /usr/bin/sudo, cwd:
- /home/developer/workspace/vendor/sensor-test/src/hook_ebpf }, { id: 47061, pid:
- 47061, uid: 1000, gid: 1000, path: /usr/bin/make, cwd:
- /home/developer/workspace/vendor/sensor-test/src/hook_ebpf }], program:
- do_nanosleep, outcome: Terminated, mode: Enforce, job: 875397, build: 0 }
- # Attaching 1 probe...
- #
- #
- [info] starting job: test_hook_ebpf_all
- [error] expected error: /bin/bash /tmp/endura_hook_ebpf/script.sh
- [info] stopping job: test_hook_ebpf_all
- not ok 2 hook ebpf all in 8709ms
- # (from function `log_error' in file ../env.bats, line 49,
- #  from function `verify_ebpf_rejected' in file main.bats, line 24,
- #  from function `setup' in test file main.bats, line 48)
- #   `verify_ebpf_rejected' failed
- # Attaching 1 probe...
- #
- .
- - does not appear that "bpf_send_signal(KILL)" is working? when sleeping for
- 3333 it just sat instead of dying
- - note we are not checking the return code of bpf_send_signal: might be failing
- on oracle 8
- -> update: verified return code - no issue there
 
