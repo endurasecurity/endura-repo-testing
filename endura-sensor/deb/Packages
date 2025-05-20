@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.16.0.84dacb6
+Version: 0.17.8.c491f79
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 12084
-Filename: ./endura-sensor_0.16.0.84dacb6_amd64.deb
-Size: 3168696
-MD5sum: 1b17f7949eb59a6824f8dd272fb95f76
-SHA1: cb612f81bfa7fa92002a1b44c7078abf655c382f
-SHA256: 968e1ab91fac8eed388fd8e9ad5de7524eaafe54882bfb7f4f55661fb3c360fc
+Installed-Size: 12132
+Filename: ./endura-sensor_0.17.8.c491f79_amd64.deb
+Size: 3180056
+MD5sum: 17c86bca9d0f31855c52da00c5cebc30
+SHA1: 30de4ffc1753289728bf964c9b2b56fcfbf59132
+SHA256: ec4685d95c1fb3db94f4d837386b1c2fa6a48a6e81820460108fa018336b69b6
 Section: Development
 Priority: optional
 Description: sensor
@@ -39,129 +39,15 @@ Description: sensor
  - resolves to one ip on load but another when customer app runs
  - consider blocking dns resolution in the kernel itself
  .
- ### ISSUE: event should dictate "created_at", not team-server
- .
- - team-server gets events out of order and will capture invalid timestamps
- - should be able to sort by timestamp and see events as they were triggered
- during the build
- .
  ### ISSUE: allow expression of ip address range in net connect/bind policies
  .
  - ex: 140.82.[111-114].[33-34]
  .
- ### ISSUE: only "/usr/bin/endura" is authorized to access the socket
- .
- ### ISSUE: who is authorized to invoke "/usr/bin/endura"?
- .
- - is there authentication? unclear how to ensure secret not exposed to other
- processes
- -> as long as the secret is not exposed as a global env, but job specific,
- should be fine
- - maybe define a list of authorized processes (in no order) all the way up the
- chain?
- -> different from path_exec in that we go beyond just 3 levels to our max
- (currently 8; which can be exploited)
- -> could be enforced at the userspace level
- - maybe do both of the above?
- -> a solution to this would still mean declaring path_exec for /usr/bin/endura
- necessary?
- - this strategy prevents someone from SSHing in and just killing the process
- .
- - UPDATE: enforce 3 level path_exec, add "ENDURA_SENSOR_KEY" and validate
- before processing "endura" command
+ ### ISSUE: need to implement ENDURA_SENSOR_KEY
  .
  ### QUESTION: musl threading performance issues
  .
  - see:
  https://www.linkedin.com/pulse/testing-alternative-c-memory-allocators-pt-2-musl-mystery-gomes/
  - adopt mimalloc? already implemented. no metrics to assess impact!!
- .
- ### ISSUE: Rocky and Alm 8 Fails
- .
- [info] [test] sensor-test src/network_connect
- make[1]: Entering directory
- '/home/developer/workspace/vendor/sensor-test/src/network_connect'
- sudo -E bats -T main.bats
- 1..6
- [info] creating environment: /tmp/endura_network_connect
- [info] installing endura sensor
- [info] endura 0.14.1.0e298fc installed
- [info] starting sensor
- [info] lsm bpf enabled: capability,yama,selinux,bpf
- [info] endura 0.14.1.0e298fc installed
- [info] waiting for sensor to start (1/15)
- [info] starting job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3a-5bport-5d
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3a-5bport-5d
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] starting job: test_network_connect_all-3a-5bhost-5d-3a-5bport-5d
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_all-3a-5bhost-5d-3a-5bport-5d
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] starting job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3aall
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_-5bpath-5d-3a-5bhost-5d-3aall
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] starting job: test_network_connect_-5bpath-5d-3aall-3a-5bport-5d
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_-5bpath-5d-3aall-3a-5bport-5d
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] starting job: test_network_connect_-5bpath-5d-3aall-3aall
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_-5bpath-5d-3aall-3aall
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] starting job: test_network_connect_all_all-3aall
- [info] testing policy permit: 683fdae
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping job: test_network_connect_all_all-3aall
- [error] unexpected error: /tmp/endura_network_connect/curl -4 -s
- http://example.com
- [info] stopping sensor
- [info] deleting environment
- # bats warning: Executed 0 instead of expected 6 tests
- make[1]: Leaving directory
- '/home/developer/workspace/vendor/sensor-test/src/network_connect'
- make: Leaving directory '/home/developer/workspace/vendor/sensor-test'
- make[1]: *** [Makefile:11: test] Error 1
- make: *** [Makefile:52: test] Error 2
- make: *** [Makefile:151: test-alma-8-amd64] Error 2
- .
- - logging in via console and dmesg shows:
- .
- "virtio_net virtio1 eth0: XDP request 5 queues but max is 1"
- changing to "32" made no difference
- .
- - all network connections seem to freeze / hang once xdp_dns_monitor is loaded
- .
- - per chatgpt
- .
- Native XDP on virtio-net (supported since kernel 4.10) asks the driver to
- disable large-receive offload (LRO) and related “guest” offloads, and to
- hand you direct RX/TX queues.
- .
- On RHEL 8’s 4.18 virtio_net driver, however, the tap/virtio stack still has
- LRO enabled by default (via the IFF_VNET_HDR flag), and it will happily let you
- attach the XDP program but then never hand packets back up to the kernel
- network stack. Everything just sits in the queues and your TCP handshakes hang.
- .
- - consider moving away from XDP and to kprobe or similar
- .
- SEC("kprobe/udp_recvmsg")
- SEC("tracepoint/net/netif_receive_skb")
 
