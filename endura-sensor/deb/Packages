@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.17.9.b534349
+Version: 0.17.12.3fd7061
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 12136
-Filename: ./endura-sensor_0.17.9.b534349_amd64.deb
-Size: 3180060
-MD5sum: f1be1fa5db7a0fe28614e59ee89a50ba
-SHA1: 036c1a8eb8e41026ceafe88f524ebc551b117279
-SHA256: da81cbb3b1a0c4a06c82078c156ffcb253832b44c835f671f2a841621d2e673b
+Installed-Size: 12164
+Filename: ./endura-sensor_0.17.12.3fd7061_amd64.deb
+Size: 3186492
+MD5sum: 7281c592aa917dd3c27399d3d144cf02
+SHA1: fd1c5b77c96926619f7b0e5bcea1d8d2d1aaed45
+SHA256: 5276ac04ae0640cb307a50f937f0d59e62ea5f450fc5be54689d4824813cede5
 Section: Development
 Priority: optional
 Description: sensor
@@ -29,6 +29,17 @@ Description: sensor
  - Inventory of libraries being used
  .
  ## ISSUES
+ .
+ ### ISSUE: job stop fails for mkosi demo after running for over 5 mins
+ .
+ 2025-05-23T16:55:10.020002Z ERROR main endura: command failed error=job stop
+ failed
+ Caused by:
+     no record found for Query { name:
+ Name("193-36-143-63.static.reverse.lstn.net."), query_type: AAAA, query_class:
+ IN } source=Some("no record found for Query { name:
+ Name(\"193-36-143-63.static.reverse.lstn.net.\"), query_type: AAAA,
+ query_class: IN }")
  .
  ### ISSUE: io_uring is async where syscalls not invoked
  .
