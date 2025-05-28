@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.17.12.3fd7061
+Version: 0.18.2.a7c5751
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 12164
-Filename: ./endura-sensor_0.17.12.3fd7061_amd64.deb
-Size: 3186492
-MD5sum: 7281c592aa917dd3c27399d3d144cf02
-SHA1: fd1c5b77c96926619f7b0e5bcea1d8d2d1aaed45
-SHA256: 5276ac04ae0640cb307a50f937f0d59e62ea5f450fc5be54689d4824813cede5
+Installed-Size: 12184
+Filename: ./endura-sensor_0.18.2.a7c5751_amd64.deb
+Size: 3191504
+MD5sum: 847d49e3db72816c5b1bce3d370e7407
+SHA1: 83cb9e38622f3a4c4372823865ea239b79eb1a3e
+SHA256: c62f84abc90d36f23b5c493d975a5c440b3af8adf934891dd003fac7a5b3fc13
 Section: Development
 Priority: optional
 Description: sensor
@@ -30,6 +30,19 @@ Description: sensor
  .
  ## ISSUES
  .
+ ### ISSUE: multiple updates needed for endura standalone deployment support
+ .
+ [x] - "endura sensor stop" should either fail if running jobs (preferred) or
+ forcefully remove all existing jobs
+ -> necessary for "systemctl stop endura-sensor.service" to not silently break
+ protection for other jobs
+ .
+ [x] - "endura job stop" should support either job id or job workspace, or
+ possibly just the workspace itself
+ -> no way to know previous job id in ExecStart and ExecStop systemd context
+ .
+ [x] - need to pretty print violations in logs, as no ui to better triage
+ .
  ### ISSUE: job stop fails for mkosi demo after running for over 5 mins
  .
  2025-05-23T16:55:10.020002Z ERROR main endura: command failed error=job stop
@@ -43,16 +56,18 @@ Description: sensor
  .
  ### ISSUE: io_uring is async where syscalls not invoked
  .
- - need tests to verify that kprobes/LSMs stil invoked correctly
+ - need tests to verify that fentry/LSMs/tracepoints stil invoked correctly
  .
  ### ISSUE: name resolution is insufficient
  .
  - resolves to one ip on load but another when customer app runs
  - consider blocking dns resolution in the kernel itself
  .
- ### ISSUE: allow expression of ip address range in net connect/bind policies
+ ### ISSUE: allow expression of ip address range in net connect/bind policies;
+ better support for cloud ip ranges
  .
  - ex: 140.82.[111-114].[33-34]
+ - dynamically lookup ip ranges for github.com, gitlab.com, etc.
  .
  ### ISSUE: need to implement ENDURA_SENSOR_KEY
  .
