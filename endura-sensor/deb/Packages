@@ -1,13 +1,13 @@
 Package: endura-sensor
-Version: 0.18.3.44188de
+Version: 0.19.2.421aba6
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 12184
-Filename: ./endura-sensor_0.18.3.44188de_amd64.deb
-Size: 3192172
-MD5sum: 6e9de19fba6d3be9af5512d2c4dd5ae8
-SHA1: 5db19637fa73c12a4c0faa565501851be13b00db
-SHA256: 4b792a9a8e0e7a7c17175bd1d4f8009c171da298f979fad5be106b0c24665234
+Installed-Size: 14341
+Filename: ./endura-sensor_0.19.2.421aba6_amd64.deb
+Size: 3279148
+MD5sum: cf18db59e5e06556887ef5bb6817059d
+SHA1: 565915ea65e9fd0d35cc541af78205dcbff73d9a
+SHA256: e2b46c8376745f9f084171e9c54886fd3cffbbf4c33d9fa6a85eed12747cb99d
 Section: Development
 Priority: optional
 Description: sensor
@@ -30,44 +30,14 @@ Description: sensor
  .
  ## ISSUES
  .
- ### ISSUE: multiple updates needed for endura standalone deployment support
+ ### ISSUE: IPv6 not properly tested
  .
- [x] - "endura sensor stop" should either fail if running jobs (preferred) or
- forcefully remove all existing jobs
- -> necessary for "systemctl stop endura-sensor.service" to not silently break
- protection for other jobs
- .
- [x] - "endura job stop" should support either job id or job workspace, or
- possibly just the workspace itself
- -> no way to know previous job id in ExecStart and ExecStop systemd context
- .
- [x] - need to pretty print violations in logs, as no ui to better triage
- .
- ### ISSUE: job stop fails for mkosi demo after running for over 5 mins
- .
- 2025-05-23T16:55:10.020002Z ERROR main endura: command failed error=job stop
- failed
- Caused by:
-     no record found for Query { name:
- Name("193-36-143-63.static.reverse.lstn.net."), query_type: AAAA, query_class:
- IN } source=Some("no record found for Query { name:
- Name(\"193-36-143-63.static.reverse.lstn.net.\"), query_type: AAAA,
- query_class: IN }")
+ - ISP not using IPv6? cannot connect to example.com over ipv6? net bind/connect
+ ipv6 not tested
  .
  ### ISSUE: io_uring is async where syscalls not invoked
  .
  - need tests to verify that fentry/LSMs/tracepoints stil invoked correctly
- .
- ### ISSUE: name resolution is insufficient
- .
- - resolves to one ip on load but another when customer app runs
- - consider blocking dns resolution in the kernel itself
- .
- ### ISSUE: allow expression of ip address range in net connect/bind policies;
- better support for cloud ip ranges
- .
- - ex: 140.82.[111-114].[33-34]
- - dynamically lookup ip ranges for github.com, gitlab.com, etc.
  .
  ### ISSUE: need to implement ENDURA_SENSOR_KEY
  .
@@ -76,4 +46,248 @@ Description: sensor
  - see:
  https://www.linkedin.com/pulse/testing-alternative-c-memory-allocators-pt-2-musl-mystery-gomes/
  - adopt mimalloc? already implemented. no metrics to assess impact!!
+ .
+ .
+ ### ISSUE: name resolution is insufficient
+ .
+ - resolves to one ip on load but another when customer app runs
+ - consider blocking dns resolution in the kernel itself
+ - consider supporting ranges, ex: 140.82.[111-114].[33-34]
+ - dynamically lookup ip ranges for github.com, gitlab.com, etc.
+ .
+ UPDATE: 5/28
+ .
+ - eliminate dependency on dns resolution all together
+ - introduce support for cidr/range like syntax
+ - when derive...
+ -> check if IP is "private", if so, just save it as-is
+ -> if not private, issue "whois" and parse the ip addr range
+ -> convert this range into a hash that can be queried in eBPF with minimal
+ iterations; cannot just flatten out as-is
+ -> store this range
+ - when in eBPF...
+ -> (optional?) check if ip is private and, if so, query policy directly
+ -> if above is no match, convert it to a range and query that
+ .
+ - code to help detect "private" ip
+ -> rust
+ .
+ use std::net::IpAddr;
+ .
+ fn is_private(ip: IpAddr) -> bool {
+     match ip {
+         IpAddr::V4(v4) => {
+             v4.octets()[0] == 10 ||
+             (v4.octets()[0] == 172 && (16..=31).contains(&v4.octets()[1])) ||
+             (v4.octets()[0] == 192 && v4.octets()[1] == 168)
+         }
+         IpAddr::V6(v6) => {
+             v6.segments()[0] & 0xfe00 == 0xfc00 || // fc00::/7
+             v6.segments()[0] & 0xffc0 == 0xfe80     // fe80::/10 (link-local)
+         }
+     }
+ }
+ .
+ fn main() {
+     let ip: IpAddr = "192.168.1.100".parse().unwrap();
+     println!("Is private: {}", is_private(ip));
+ }
+ .
+ .
+ -> eBPF
+ .
+ static __always_inline bool is_private_ipv4(__u32 ip)
+ {
+     // IPv4 is in host byte order
+     // RFC 1918 Private Address Ranges:
+ .
+     // 10.0.0.0/8 (10.0.0.0 - 10.255.255.255)
+     if ((ip & 0xff000000) == 0x0a000000)
+         return true;
+ .
+     // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
+     if ((ip & 0xfff00000) == 0xac100000)
+         return true;
+ .
+     // 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
+     if ((ip & 0xffff0000) == 0xc0a80000)
+         return true;
+ .
+     // Additional special-use addresses:
+ .
+     // 127.0.0.0/8 (loopback - 127.0.0.0 - 127.255.255.255)
+     if ((ip & 0xff000000) == 0x7f000000)
+         return true;
+ .
+     // 169.254.0.0/16 (link-local - 169.254.0.0 - 169.254.255.255)
+     if ((ip & 0xffff0000) == 0xa9fe0000)
+         return true;
+ .
+     return false;
+ }
+ .
+ static __always_inline bool is_private_ipv6(const __u8 *ip6)
+ {
+     // RFC 4193 Unique Local Addresses: fc00::/7
+     // This covers fc00::/8 and fd00::/8
+     // ip6[0] should be 0xfc or 0xfd
+     if ((ip6[0] & 0xfe) == 0xfc)
+         return true;
+ .
+     // RFC 4291 Link-Local Addresses: fe80::/10
+     // ip6[0] = 0xfe, and bits 2-3 of ip6[1] should be 10 (0x80)
+     if (ip6[0] == 0xfe && (ip6[1] & 0xc0) == 0x80)
+         return true;
+ .
+     // RFC 4291 Loopback Address: ::1
+     // Check if all bytes are 0 except the last byte which should be 1
+     bool is_loopback = true;
+     for (int i = 0; i < 15; i++) {
+         if (ip6[i] != 0) {
+             is_loopback = false;
+             break;
+         }
+     }
+     if (is_loopback && ip6[15] == 1)
+         return true;
+ .
+     // RFC 4291 Unspecified Address: ::
+     // All bytes are 0
+     bool is_unspecified = true;
+     for (int i = 0; i < 16; i++) {
+         if (ip6[i] != 0) {
+             is_unspecified = false;
+             break;
+         }
+     }
+     if (is_unspecified)
+         return true;
+ .
+     return false;
+ }
+ .
+ .
+ -- logic to compare ipv6 ranges in ebpf
+ .
+ struct ip6_range {
+     __u64 start_hi, start_lo;
+     __u64 end_hi, end_lo;
+ };
+ .
+ struct {
+     __uint(type, BPF_MAP_TYPE_ARRAY);
+     __uint(max_entries, 16); // Adjust as needed
+     __type(key, __u32);
+     __type(value, struct ip6_range);
+ } allowed_ipv6_ranges SEC(".maps");
+ .
+ static __always_inline bool ip6_in_range(__u64 hi, __u64 lo, const struct
+ ip6_range *range)
+ {
+     return (hi > range->start_hi || (hi == range->start_hi && lo >=
+ range->start_lo)) &&
+            (hi < range->end_hi   || (hi == range->end_hi   && lo <=
+ range->end_lo));
+ }
+ .
+ static __always_inline bool ip6_allowed(const __u8 *addr)
+ {
+     // Convert 16-byte IPv6 addr into two u64s
+     __u64 hi = ((__u64)addr[0] << 56) | ((__u64)addr[1] << 48) |
+                ((__u64)addr[2] << 40) | ((__u64)addr[3] << 32) |
+                ((__u64)addr[4] << 24) | ((__u64)addr[5] << 16) |
+                ((__u64)addr[6] << 8)  | ((__u64)addr[7]);
+ .
+     __u64 lo = ((__u64)addr[8] << 56) | ((__u64)addr[9] << 48) |
+                ((__u64)addr[10] << 40) | ((__u64)addr[11] << 32) |
+                ((__u64)addr[12] << 24) | ((__u64)addr[13] << 16) |
+                ((__u64)addr[14] << 8)  | ((__u64)addr[15]);
+ .
+     struct ip6_range *range;
+ #pragma unroll
+     for (__u32 i = 0; i < 16; i++) {
+         range = bpf_map_lookup_elem(&allowed_ipv6_ranges, &i);
+         if (!range)
+             continue;
+         if (ip6_in_range(hi, lo, range))
+             return true;
+     }
+ .
+     return false;
+ }
+ .
+ -- logic to compare ipv4 ranges in ebpf
+ .
+ struct ip4_range {
+     __u32 start;
+     __u32 end;
+ };
+ .
+ struct {
+     __uint(type, BPF_MAP_TYPE_ARRAY);
+     __uint(max_entries, 16); // Number of ranges
+     __type(key, __u32);      // Range index
+     __type(value, struct ip4_range);
+ } allowed_ranges SEC(".maps");
+ .
+ static __always_inline bool ip4_allowed(__u32 ip)
+ {
+     struct ip4_range *range;
+ #pragma unroll
+     for (__u32 i = 0; i < 16; i++) {
+         range = bpf_map_lookup_elem(&allowed_ranges, &i);
+         if (!range)
+             continue;
+         if (ip >= range->start && ip <= range->end)
+             return true;
+     }
+     return false;
+ }
+ .
+ RDAP: https://rdap.arin.net/registry/ip/140.82.113.3
+ .
+ use std::net::Ipv6Addr;
+ .
+ /// Rust equivalent of `struct ip6_range` in C
+ #[derive(Debug)]
+ struct Ip6Range {
+     start_hi: u64,
+     start_lo: u64,
+     end_hi: u64,
+     end_lo: u64,
+ }
+ .
+ /// Convert an Ipv6Addr into (hi, lo) pair of u64s
+ fn ipv6_to_u64s(ip: Ipv6Addr) -> (u64, u64) {
+     let segments = ip.octets();
+     let hi = u64::from_be_bytes(segments[0..8].try_into().unwrap());
+     let lo = u64::from_be_bytes(segments[8..16].try_into().unwrap());
+     (hi, lo)
+ }
+ .
+ /// Given RDAP-style start and end IPv6 strings, convert to Ip6Range
+ fn parse_ipv6_range(start: &str, end: &str) -> Result<Ip6Range,
+ std::net::AddrParseError> {
+     let start_ip: Ipv6Addr = start.parse()?;
+     let end_ip: Ipv6Addr = end.parse()?;
+     let (start_hi, start_lo) = ipv6_to_u64s(start_ip);
+     let (end_hi, end_lo) = ipv6_to_u64s(end_ip);
+     Ok(Ip6Range { start_hi, start_lo, end_hi, end_lo })
+ }
+ .
+ .
+ fn main() -> Result<(), Box<dyn std::error::Error>> {
+     let rdap_start = "2606:50c0:8000::";
+     let rdap_end   = "2606:50c0:ffff:ffff:ffff:ffff:ffff:ffff";
+ .
+     let range = parse_ipv6_range(rdap_start, rdap_end)?;
+     println!("{:#?}", range);
+     Ok(())
+ }
+ .
+ #### UPDATE: range is nice to have, but core issue remains
+ .
+ - support list of maintained domains?
+ .
+ https://api.github.com/meta
 
