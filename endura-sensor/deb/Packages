@@ -2,12 +2,12 @@ Package: endura-sensor
 Version: 0.19.8.cd882bb
 Architecture: amd64
 Maintainer: Infrared Security, LLC.
-Installed-Size: 2707
+Installed-Size: 2710
 Filename: ./endura-sensor_0.19.8.cd882bb_amd64.deb
-Size: 2770868
-MD5sum: ab82cd91fb69cce985b7ec6fcffe6650
-SHA1: c1b7133d9917b9175616626d51a7e95b849ec118
-SHA256: f9b73e5aa854e07b499599d924f7139b4223da4e32238acc4846988cd86ee08d
+Size: 2774712
+MD5sum: 6c91b070d0efcf883974cc382f8113b5
+SHA1: ffa6ca3095db2a293b42cf75215663346ab250f3
+SHA256: ced6e14837592978acb945477a8c6e82947805b2190fa05d93041a190d2a981b
 Section: Development
 Priority: optional
 Description: sensor
